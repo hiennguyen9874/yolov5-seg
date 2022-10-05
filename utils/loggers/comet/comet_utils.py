@@ -44,7 +44,9 @@ def download_model_checkpoint(opt, experiment):
         checkpoint_filename = COMET_DEFAULT_CHECKPOINT_FILENAME
 
     if asset_id is None:
-        logger.error(f"COMET ERROR: Checkpoint {checkpoint_filename} not found in the given Experiment")
+        logger.error(
+            f"COMET ERROR: Checkpoint {checkpoint_filename} not found in the given Experiment"
+        )
         return
 
     try:

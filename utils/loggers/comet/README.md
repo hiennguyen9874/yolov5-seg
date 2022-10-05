@@ -54,6 +54,7 @@ That's it! Comet will automatically log your hyperparameters, command line argum
 <img width="1920" alt="yolo-ui" src="https://user-images.githubusercontent.com/7529846/187608607-ff89c3d5-1b8b-4743-a974-9275301b0524.png">
 
 # Try out an Example!
+
 Check out an example of a [completed run here](https://www.comet.com/examples/comet-example-yolov5/a0e29e0e9b984e4a822db2a62d0cb357?experiment-tab=chart&showOutliers=true&smoothing=0&transformY=smoothing&xAxis=step&ref=yolov5&utm_source=yolov5&utm_medium=affilliate&utm_campaign=yolov5_comet_integration)
 
 Or better yet, try it out yourself in this Colab Notebook
@@ -65,6 +66,7 @@ Or better yet, try it out yourself in this Colab Notebook
 By default, Comet will log the following items
 
 ## Metrics
+
 - Box Loss, Object Loss, Classification Loss for the training and validation data
 - mAP_0.5, mAP_0.5:0.95 metrics for the validation data.
 - Precision and Recall for the validation data
@@ -120,7 +122,6 @@ You can control the frequency of logged predictions and the associated images by
 **Note:** The YOLOv5 validation dataloader will default to a batch size of 32, so you will have to set the logging frequency accordingly.
 
 Here is an [example project using the Panel](https://www.comet.com/examples/comet-example-yolov5?shareable=YcwMiJaZSXfcEXpGOHDD12vA1&ref=yolov5&utm_source=yolov5&utm_medium=affilliate&utm_campaign=yolov5_comet_integration)
-
 
 ```shell
 python train.py \
@@ -192,6 +193,7 @@ If you would like to use a dataset from Comet Artifacts, set the `path` variable
 # contents of artifact.yaml file
 path: "comet://<workspace name>/<artifact name>:<artifact version or alias>"
 ```
+
 Then pass this file to your training script in the following way
 
 ```shell
@@ -212,7 +214,7 @@ If your training run is interrupted for any reason, e.g. disrupted internet conn
 
 The Run Path has the following format `comet://<your workspace name>/<your project name>/<experiment id>`.
 
-This will restore the run to its state before the interruption, which includes restoring the  model from a checkpoint, restoring all hyperparameters and training arguments and downloading Comet dataset Artifacts if they were used in the original run. The resumed run will continue logging to the existing Experiment in the Comet UI
+This will restore the run to its state before the interruption, which includes restoring the model from a checkpoint, restoring all hyperparameters and training arguments and downloading Comet dataset Artifacts if they were used in the original run. The resumed run will continue logging to the existing Experiment in the Comet UI
 
 ```shell
 python train.py \
