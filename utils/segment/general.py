@@ -67,6 +67,66 @@ def process_mask(protos, masks_in, bboxes, shape, upsample=False):
     return masks.gt_(0.5)
 
 
+def merge_bases(rois, coeffs, attn_r, num_b, location_to_inds=None):
+    # merge predictions
+    # N = coeffs.size(0)
+    if location_to_inds is not None:
+        rois = rois[location_to_inds]
+    N, B, H, W = rois.size()
+    if coeffs.dim() != 4:
+        coeffs = coeffs.view(N, num_b, attn_r, attn_r)
+    # NA = coeffs.shape[1] //  B
+    coeffs = F.interpolate(coeffs, (H, W), mode="bilinear").softmax(dim=1)
+    # coeffs = coeffs.view(N, -1, B, H, W)
+    # rois = rois[:, None, ...].repeat(1, NA, 1, 1, 1)
+    # masks_preds, _ = (rois * coeffs).sum(dim=2) # c.max(dim=1)
+    masks_preds = (rois * coeffs).sum(dim=1)
+    return masks_preds
+
+
+def process_yolov7_mask(
+    protos,
+    masks_in,
+    bboxes,
+    shape,
+    mask_resolution: int = 56,
+    pooler_scale: float = 0.25,
+    attn_resolution: int = 14,
+    sampling_ratio: int = 0,
+    num_base: int = 5,
+):
+    from torchvision.ops import roi_align
+    from torchvision.models.detection.roi_heads import paste_masks_in_image
+
+    # protos.shape = [num_base, proto_h, proto_w]
+    # masks_in.shape = [num_bboxes, num_base * attn_resolution * attn_resolution]
+    # bboxes.shape = [num_bboxes, 4]
+
+    ih, iw = shape
+
+    pooled_bases = roi_align(
+        protos[None].float(),
+        [bboxes],
+        output_size=mask_resolution,
+        spatial_scale=pooler_scale,
+        sampling_ratio=sampling_ratio,
+        aligned=True,
+    )
+    # pooled_bases.shape = [1, num_base, mask_resolution, mask_resolution]
+    pred_masks = (
+        merge_bases(pooled_bases, masks_in, attn_resolution, num_base)
+        .view(masks_in.shape[0], mask_resolution * mask_resolution)
+        .sigmoid()
+    )
+    pred_masks = paste_masks_in_image(
+        pred_masks.view(-1, 1, mask_resolution, mask_resolution),
+        bboxes,
+        (ih, iw),
+    )
+    pred_masks = pred_masks.view(-1, ih, iw)
+    return pred_masks.gt_(0.5)
+
+
 def scale_image(im1_shape, masks, im0_shape, ratio_pad=None):
     """
     img1_shape: model input shape, [h, w]

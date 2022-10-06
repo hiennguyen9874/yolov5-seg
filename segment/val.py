@@ -62,7 +62,13 @@ from utils.general import (
 from utils.metrics import ConfusionMatrix, box_iou
 from utils.plots import output_to_target, plot_val_study
 from utils.segment.dataloaders import create_dataloader
-from utils.segment.general import mask_iou, process_mask, process_mask_upsample, scale_image
+from utils.segment.general import (
+    mask_iou,
+    process_mask,
+    process_mask_upsample,
+    scale_image,
+    process_yolov7_mask,
+)
 from utils.segment.metrics import Metrics, ap_per_class_box_and_mask
 from utils.segment.plots import plot_images_and_masks
 from utils.torch_utils import de_parallel, select_device, smart_inference_mode
@@ -182,12 +188,16 @@ def run(
     mask_downsample_ratio=1,
     compute_loss=None,
     callbacks=Callbacks(),
+    yolov7_mask=False,
 ):
     if save_json:
         check_requirements(["pycocotools"])
         process = process_mask_upsample  # more accurate
     else:
         process = process_mask  # faster
+
+    if yolov7_mask:
+        process = process_yolov7_mask
 
     # Initialize/load model and set device
     training = model is not None
@@ -218,6 +228,10 @@ def run(
         nm = (
             de_parallel(model).model.model[-1].nm if isinstance(model, SegmentationModel) else 32
         )  # number of masks
+
+        if yolov7_mask:
+            nm = 5 * 14 * 14
+
         if engine:
             batch_size = model.batch_size
         else:
@@ -359,6 +373,7 @@ def run(
             # Masks
             midx = [si] if overlap else targets[:, 0] == si
             gt_masks = masks[midx]
+
             pred_masks = process(proto, pred[:, 6:], pred[:, :4], shape=im[si].shape[1:])
 
             # Predictions
@@ -552,6 +567,9 @@ def parse_opt():
     )
     parser.add_argument("--half", action="store_true", help="use FP16 half-precision inference")
     parser.add_argument("--dnn", action="store_true", help="use OpenCV DNN for ONNX inference")
+    parser.add_argument(
+        "--yolov7-mask", action="store_true", help="use OpenCV DNN for ONNX inference"
+    )
     opt = parser.parse_args()
     opt.data = check_yaml(opt.data)  # check YAML
     # opt.save_json |= opt.data.endswith('coco.yaml')
